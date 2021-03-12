@@ -1,0 +1,81 @@
+#!/bin/bash
+# https://btrfs.wiki.kernel.org/index.php/Incremental_Backup
+
+function transfer_snapshot(){
+
+	source_volume=$(echo "$1" | cut -d ";" -f 1)
+	snapshot_location=$(echo "$1" | cut -d ";" -f 2)
+	target_volume=$(echo "$1" | cut -d ";" -f 3)
+	snapshot_name=$(basename $source_volume)
+
+	echo "source_volume: ${source_volume}"
+	echo "snapshot_location: ${snapshot_location}"
+	echo "target_volume: ${target_volume}"
+	echo "snapshot_name: ${snapshot_name}"
+
+	# make local snapshot
+	#btrfs subvolume snapshot -r "$source_volume" "$snapshot_location"/"$snapshot_name"
+
+	# check for predecessor
+	if [ -d "$snapshot_location/old" ]; then
+		btrfs send -p "$snapshot_location"/old "$snapshot_location/$snapshot_name" | btrfs receive "$target_volume"
+		btrfs subvolume delete "$snapshot_location"/old
+	else
+		btrfs send "$snapshot_location/$snapshot_name" | btrfs receive "$target_volume"
+	fi
+	mv "$snapshot_location/$snapshot_name" "$snapshot_location/old"
+}
+
+function transfer_snapshots_iterator(){
+        config_file="$1"
+        if [ -f "$config_folder/volumes.conf" ]; then
+                while read volume
+                do
+                        transfer_snapshot "$volume"
+                done<"$config_folder/volumes.conf"
+        fi
+
+}
+
+function make_ro_snapshot_now(){
+        NOW=$(date +"%Y_%m_%d")
+        source_volume=$(echo "$1" | cut -d ";" -f 1)
+        snapshot_location=$(echo "$1" | cut -d ";" -f 2)
+
+        sudo btrfs subvolume snapshot -r "$source_volume"  "$snapshot_location/@$NOW"
+}
+
+function make_snapshots_iterator(){
+	config_file="$1"
+	if [ -f "$config_folder/volumes.conf" ]; then
+		while read volume
+		do
+			transfer_snapshot "$volume"
+		done<"$config_folder/volumes.conf"
+	fi
+}
+
+function man(){
+	echo "Excuse me. What did you say?
+
+		i needs volumes.conf, ;-seperated file
+		SOURCE_VOLUME;SNAPSHOT_LOCATION;TARGET_VOLUME
+		Options:
+		make_snapshots volumes.conf
+		transfer_snapshots volumes.conf
+		"
+}
+
+case "$1" in
+	make_snapshots)
+		make_snapshots_iterator "$2"
+		;;
+	transfer_snapshots)
+		 transfer_snapshots_iterator "$2"
+		;;
+	*)
+		man
+	;;
+esac
+
+exit 0
