@@ -28,11 +28,11 @@ function transfer_snapshot(){
 
 function transfer_snapshots_iterator(){
         config_file="$1"
-        if [ -f "$config_folder/volumes.conf" ]; then
+        if [ -f "$config_file" ]; then
                 while read volume
                 do
                         transfer_snapshot "$volume"
-                done<"$config_folder/volumes.conf"
+                done<"$config_file"
         fi
 
 }
@@ -47,11 +47,11 @@ function make_ro_snapshot_now(){
 
 function make_snapshots_iterator(){
 	config_file="$1"
-	if [ -f "$config_folder/volumes.conf" ]; then
+	if [ -f "$config_file" ]; then
 		while read volume
 		do
 			transfer_snapshot "$volume"
-		done<"$config_folder/volumes.conf"
+		done<"$config_file"
 	fi
 }
 
