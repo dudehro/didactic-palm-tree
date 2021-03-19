@@ -14,7 +14,7 @@ function transfer_snapshot(){
 	echo "snapshot_name: ${snapshot_name}"
 
 	# make local snapshot
-	#btrfs subvolume snapshot -r "$source_volume" "$snapshot_location"/"$snapshot_name"
+	btrfs subvolume snapshot -r "$source_volume" "$snapshot_location"/"$snapshot_name"
 
 	# check for predecessor
 	if [ -d "$snapshot_location/old" ]; then
