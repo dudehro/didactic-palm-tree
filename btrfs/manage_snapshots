@@ -6,8 +6,9 @@ function transfer_snapshot(){
 	source_volume=$(echo "$1" | cut -d ";" -f 1)
 	snapshot_location=$(echo "$1" | cut -d ";" -f 2)
 	target_volume=$(echo "$1" | cut -d ";" -f 3)
-	snapshot_name=$(basename $source_volume)
-
+	snapshot_name=$(basename $source_volume)_${2}
+	snapshot_name_old=${snapshot_name}_${2}
+	echo "==== Transfer Snapshot ===="
 	echo "source_volume: ${source_volume}"
 	echo "snapshot_location: ${snapshot_location}"
 	echo "target_volume: ${target_volume}"
@@ -21,14 +22,15 @@ function transfer_snapshot(){
         btrfs subvolume snapshot -r "$source_volume" "$snapshot_location"/"$snapshot_name"
 
 	# check for predecessor
-	if [ -d "$snapshot_location/old" ]; then
-		echo "parent ist $snapshot_location/old"
-		btrfs send -p "$snapshot_location/old" "$snapshot_location/$snapshot_name" | btrfs receive "$target_volume"
-		btrfs subvolume delete "$snapshot_location/old"
+	if [ -d "$snapshot_location/${snapshot_name_old}" ]; then
+		echo "Vorgänger ist $snapshot_location/${snapshot_name_old}"
+		btrfs send -p "$snapshot_location/${snapshot_name_old}" "$snapshot_location/$snapshot_name" | btrfs receive "$target_volume"
+		btrfs subvolume delete "$snapshot_location/${snapshot_name_old}"
 	else
+		echo "keinen Vorgänger gefunden, sende ohne Delta"
 		btrfs send "$snapshot_location/$snapshot_name" | btrfs receive "$target_volume"
 	fi
-	mv "$snapshot_location/$snapshot_name" "$snapshot_location/old"
+	mv "$snapshot_location/$snapshot_name" "$snapshot_location/${snapshot_name_old}"
 }
 
 function transfer_snapshots_iterator(){
@@ -36,7 +38,7 @@ function transfer_snapshots_iterator(){
         if [ -f "$config_file" ]; then
                 while read volume
                 do
-                        transfer_snapshot "$volume"
+                        transfer_snapshot "$volume" $(basename "$config_file")
                 done<"$config_file"
         fi
 
