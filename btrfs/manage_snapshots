@@ -6,7 +6,7 @@ function transfer_snapshot(){
 	source_volume=$(echo "$1" | cut -d ";" -f 1)
 	snapshot_location=$(echo "$1" | cut -d ";" -f 2)
 	target_volume=$(echo "$1" | cut -d ";" -f 3)
-	snapshot_name=$(basename $source_volume)_${2}
+	snapshot_name=$(basename $source_volume)
 	snapshot_name_old=${snapshot_name}_${2}
 	echo "==== Transfer Snapshot ===="
 	echo "source_volume: ${source_volume}"

@@ -1,3 +1,3 @@
-/mnt/first_tier/@aktuell/@mediathek;/mnt/first_tier/@snapshots/mediathek;/mnt/second_tier/
-/mnt/first_tier/@aktuell/@apps;/mnt/first_tier/@snapshots/apps;/mnt/second_tier/
-/mnt/first_tier/@aktuell/@bilder;/mnt/first_tier/@snapshots/bilder;/mnt/second_tier/
+/mnt/first_tier/@aktuell/@mediathek;/mnt/first_tier/@snapshots/mediathek;/mnt/second_tier/mediathek
+/mnt/first_tier/@aktuell/@apps;/mnt/first_tier/@snapshots/apps;/mnt/second_tier/apps
+/mnt/first_tier/@aktuell/@bilder;/mnt/first_tier/@snapshots/bilder;/mnt/second_tier/bilder
