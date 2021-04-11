@@ -7,30 +7,31 @@ function transfer_snapshot(){
 	snapshot_location=$(echo "$1" | cut -d ";" -f 2)
 	target_volume=$(echo "$1" | cut -d ";" -f 3)
 	snapshot_name=$(basename $source_volume)
-	snapshot_name_old=${snapshot_name}_${2}
+	snapshot_name_old="$snapshot_name_old"
+	TODAY=$(date +"%Y_%m_%d")
 	echo "==== Transfer Snapshot ===="
 	echo "source_volume: ${source_volume}"
 	echo "snapshot_location: ${snapshot_location}"
 	echo "target_volume: ${target_volume}"
 	echo "snapshot_name: ${snapshot_name}"
 
-	if [ -d "$snapshot_location/snapshot_name" ]; then
-		btrfs subvolume delete "$snapshot_location/snapshot_name"
+	if [ -d "$snapshot_location/$TODAY" ]; then
+		btrfs subvolume delete "$snapshot_location/$TODAY"
 	fi
 
-        # make local snapshot
-        btrfs subvolume snapshot -r "$source_volume" "$snapshot_location"/"$snapshot_name"
+	# make local snapshot
+	btrfs subvolume snapshot -r "$source_volume" "$snapshot_location/$TODAY"
 
 	# check for predecessor
-	if [ -d "$snapshot_location/${snapshot_name_old}" ]; then
-		echo "Vorgänger ist $snapshot_location/${snapshot_name_old}"
-		btrfs send -p "$snapshot_location/${snapshot_name_old}" "$snapshot_location/$snapshot_name" | btrfs receive "$target_volume"
-		btrfs subvolume delete "$snapshot_location/${snapshot_name_old}"
+#	if [ -d "$snapshot_location/${snapshot_name_old}" ]; then
+	if [ -d "$target_volume/$snapshot_name_old" ]; then
+		echo "Vorgänger ist $target_volume/$snapshot_name_old"
+		btrfs send -p "$target_volume/$snapshot_name_old" "$snapshot_location/$TODAY" | btrfs receive "$target_volume/$TODAY"
 	else
 		echo "keinen Vorgänger gefunden, sende ohne Delta"
-		btrfs send "$snapshot_location/$snapshot_name" | btrfs receive "$target_volume"
+		btrfs send "$snapshot_location/$snapshot_name" | btrfs receive "$target_volume/$TODAY"
 	fi
-	mv "$snapshot_location/$snapshot_name" "$snapshot_location/${snapshot_name_old}"
+	mv "$target_volume/$TODAY" "$target_volume/$snapshot_name_old"
 }
 
 function transfer_snapshots_iterator(){
