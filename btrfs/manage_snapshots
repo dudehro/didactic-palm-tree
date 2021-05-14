@@ -1,12 +1,19 @@
 #!/bin/bash
 # https://btrfs.wiki.kernel.org/index.php/Incremental_Backup
 
+function fail_unlesss_root(){
+	if [ "$EUID" -ne 0 ]
+  		then echo "Please run as root"
+  		exit
+	fi
+}
+
 function transfer_snapshot(){
 
 	source_volume=$(echo "$1" | cut -d ";" -f 1)
 	snapshot_location=$(echo "$1" | cut -d ";" -f 2)
 	target_volume=$(echo "$1" | cut -d ";" -f 3)
-	snapshot_name=$(date +"%Y_%m_%d")
+	snapshot_name="@$(date +"%Y_%m_%d")"
 	echo "==== Transfer Snapshot ===="
 	echo "source_volume: ${source_volume}"
 	echo "snapshot_location: ${snapshot_location}"
@@ -17,6 +24,12 @@ function transfer_snapshot(){
 	snapshot_name_old=$(find "$snapshot_location" -maxdepth 1 -mindepth 1 -type d -name *last | xargs -I {} basename {})
 	echo "snapshot_name_old: $snapshot_name_old"
 
+#	echo "continue with these values? [y/N]"
+#	read answer
+#	if [ "$answer" != "y" ]; then
+#		exit
+#	fi
+
 	# make snapshot
 	if [ ! -d "$snapshot_location/$snapshot_name" ]; then
         	# make local snapshot
@@ -24,16 +37,16 @@ function transfer_snapshot(){
 	fi
 
 	# check for predecessor
-	if [ -d "$snapshot_location/snapshot_name_old" ]; then
+	if [ -d "$snapshot_location/$snapshot_name_old" ] && [ -n "$snapshot_name_old" ]; then
 		echo "Vorgänger ist $snapshot_location/$snapshot_name_old"
 		btrfs send -p "$snapshot_location/$snapshot_name_old" "$snapshot_location/$snapshot_name" | btrfs receive "$target_volume"
 		# rename old snapshot, remove _last postfix
-		mv "$snapshot_location/$snapshot_name_old" "$snapshot_location/${snapshot_name_old:0:10}"
+		mv "$snapshot_location/$snapshot_name_old" "$snapshot_location/${snapshot_name_old:0:11}"
 	else
 		echo "keinen Vorgänger gefunden, sende ohne Delta"
 		btrfs send "$snapshot_location/$snapshot_name" | btrfs receive "$target_volume"
 	fi
-	mv "$target_volume/$snapshot_name" "$target_volume/$snapshot_name_last"
+	mv "$snapshot_location/$snapshot_name" "$snapshot_location/${snapshot_name}_last"
 }
 
 function transfer_snapshots_iterator(){
@@ -74,6 +87,8 @@ function man(){
 		transfer_snapshots volumes.conf
 		"
 }
+
+fail_unlesss_root
 
 case "$1" in
 	make_snapshots)
